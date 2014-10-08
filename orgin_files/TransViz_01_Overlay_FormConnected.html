@@ -1,0 +1,562 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge;chrome=1">
+		<meta name="viewport" content="initial-scale=1.0, user-scalable=no"/>
+		<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+		<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js?1.29.1"></script>
+	
+		<title>TranVis_v0.1</title>
+		<style>
+			body
+			{
+				background-color: #303030;
+				font-family: Times New Roman;
+				color: #E6E6E6;
+				font-size: 20px;
+				stroke: "black";
+			}			
+			.dest
+			{
+				font-size: 20px
+				fill: #E6E6E6
+				color: #E6E6E6;
+			}			
+			.unindentified-
+			{
+				font-size: 12px
+				fill: #E6E6E6;
+				color: #E6E6E6;
+			}
+			.source
+			{
+				font-size: 20px
+				fill: #E6E6E6;
+				color: #E6E6E6;
+			}
+			
+			
+			ul
+			{
+				list-style-type: none;
+				margin: 0;
+				padding: 0;
+			}
+
+			div0{
+				float: left;
+				width: 2500px;
+				height: 200px;
+			}
+			div1
+			{
+				float: left;
+				width: 2500px;
+				height: 1100px;
+
+			}			
+			div2
+			{
+				float: left;
+				width: 600px;
+			}
+			div3
+			{
+				float: left;
+				width: 2500px;
+				height: 1100px;
+				background-color: gray;
+			}			
+			.subunit.SCT { fill: #ddc; }
+			.subunit.WLS { fill: #cdd; }
+			.subunit.NIR { fill: #cdc; }
+			.subunit.ENG { fill: #dcd; }
+
+			.subunit.IRL,
+			.subunit-label.IRL {
+				display: none;
+			}
+
+			.subunit-boundary {
+			  fill: none;
+			  stroke: #777;
+			  stroke-dasharray: 2,2;
+			  stroke-linejoin: round;
+			}
+
+			.subunit-boundary.IRL {
+			  stroke: #aaa;
+			}
+
+			.subunit-label {
+			  fill: #777;
+			  fill-opacity: .75;
+			  font-size: 20px;
+			  font-weight: 600;
+			  text-anchor: middle;
+			}
+
+			.place,
+			.place-label {
+			  fill: #444;
+			}
+
+			text {
+			  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+			  font-size: 10px;
+			  pointer-events: none;
+			}
+			
+			.stations, .stations svg {
+				position: absolute;
+			}
+ 
+			.stations svg {
+			  width: 60px;
+			  height: 20px;
+			  padding-right: 100px;
+			  font: 10px sans-serif;
+			}
+ 
+			.stations circle {
+			  fill: red;
+			  stroke: black;
+			  stroke-width: 1.5px;
+			}
+			
+			.stations ellipse {
+			  fill: green;
+			  stroke: black;
+			  stroke-width: 1.5px;
+			}
+		</style>
+		<script type="text/javascript"></script>		
+	</head>
+	<body>
+		<h1>Visualization of Transportation data for Transcore</h1>
+			<script src="http://d3js.org/d3.v3.min.js"></script>
+			<script src="http://d3js.org/topojson.v1.min.js"></script>			
+			<div0>
+
+				<ul id="VizView">
+					<button onclick="transitiontoMap()">Map View</button>			
+					<button onclick="transitiontoStats()">Stats View</button>	
+					<script type="text/javascript">	
+					
+					function transitiontoMap()
+					{
+						var e = document.getElementById("map");
+						e.style.display = 'none';
+						var f =  document.getElementById("stats");				       
+				        e.style.display = 'block'; 				
+					}	
+
+					function transitiontoStats()
+					{
+						var e = document.getElementById("map");				       
+				        e.style.display = 'block';  
+				        var f =  document.getElementById("stats");				       
+				        e.style.display = 'none'; 
+					} 
+					</script>
+			</div0>
+			<div1 id="map"></div1>
+				<script type="text/javascript">			 
+					// Create the Google Map…
+					var marker;
+					var map;
+					var isChecked;
+					var flightPathArray = [];
+					var map = new google.maps.Map(d3.select("#map").node(), {
+					  zoom: 5,
+					  center: new google.maps.LatLng(38.8833, -98.35),
+					  // How you would like to style the map. 
+                    // This is where you would paste any style found on Snazzy Maps.
+                      //Plain outline: styles: [{"featureType":"all","stylers":[{"visibility":"off"}]},{"featureType":"water","stylers":[{"visibility":"on"},{"lightness":-100}]}]
+					  //Blue: styles: [{"featureType":"water","stylers":[{"color":"#021019"}]},{"featureType":"landscape","stylers":[{"color":"#08304b"}]},{"featureType":"poi","elementType":"geometry","stylers":[{"color":"#0c4152"},{"lightness":5}]},{"featureType":"road.highway","elementType":"geometry.fill","stylers":[{"color":"#000000"}]},{"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#0b434f"},{"lightness":25}]},{"featureType":"road.arterial","elementType":"geometry.fill","stylers":[{"color":"#000000"}]},{"featureType":"road.arterial","elementType":"geometry.stroke","stylers":[{"color":"#0b3d51"},{"lightness":16}]},{"featureType":"road.local","elementType":"geometry","stylers":[{"color":"#000000"}]},{"elementType":"labels.text.fill","stylers":[{"color":"#ffffff"}]},{"elementType":"labels.text.stroke","stylers":[{"color":"#000000"},{"lightness":13}]},{"featureType":"transit","stylers":[{"color":"#146474"}]},{"featureType":"administrative","elementType":"geometry.fill","stylers":[{"color":"#000000"}]},{"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#144b53"},{"lightness":14},{"weight":1.4}]}]
+					  styles: [{"featureType":"water","elementType":"geometry","stylers":[{"color":"#193341"}]},{"featureType":"landscape","elementType":"geometry","stylers":[{"color":"#2c5a71"}]},{"featureType":"road","elementType":"geometry","stylers":[{"color":"#29768a"},{"lightness":-37}]},{"featureType":"poi","elementType":"geometry","stylers":[{"color":"#406d80"}]},{"featureType":"transit","elementType":"geometry","stylers":[{"color":"#406d80"}]},{"elementType":"labels.text.stroke","stylers":[{"visibility":"on"},{"color":"#3e606f"},{"weight":2},{"gamma":0.84}]},{"elementType":"labels.text.fill","stylers":[{"color":"#ffffff"}]},{"featureType":"administrative","elementType":"geometry","stylers":[{"weight":0.6},{"color":"#1a3541"}]},{"elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#2c5a71"}]}]
+				    //mapTypeId: google.maps.MapTypeId.ROADMAP
+					});	
+				
+					
+					 
+					// Load the station data. When the data comes back, create an overlay.
+					function initSource(myData){
+						d3.json("Full_file.json", function(data) {
+						var overlay = new google.maps.OverlayView();	
+						var flightPath;
+						var flightPlanCoordinates;	
+						  // Add the container when the overlay is added to the map.
+						  overlay.onAdd = function() {
+							var layer = d3.select(this.getPanes().overlayMouseTarget).append("div")
+								.attr("class", "stations");
+						 
+							// Draw each marker as a separate SVG element.
+							// We could use a single SVG, but what size would it have?
+							overlay.draw = function() {
+							  var projection = this.getProjection(),
+								  padding = 10;
+						 
+							 // var 
+							  marker = layer.selectAll("svg")
+								  .data(d3.entries(data))
+								  .each(transform) // update existing markers
+								.enter().append("svg:svg")
+								  .each(transform)
+								  .attr("class", "marker")
+								  .attr("id","marker")
+								  .on("click", function(d) { console.log(d); });
+						 
+							  // Add a circle.											  
+							marker.append("svg:circle")
+								  .style("opacity", function(d){return d.value.weight/50000;})
+								 // .attr("r", function(d){return d.value.used_miles/150;})
+								 .attr("r",5)
+								  .attr("cx", padding)
+								  .attr("cy", padding);
+								  
+//							marker.append("svg:text")
+	//						  .attr("x", padding + 7)
+		//					  .attr("y", padding)
+			//				  .attr("dy", ".31em")
+				//			  .text(function(d) { return d.value.d_city; });
+								  
+							  function transform(d) {
+							  if (myData == 0 || myData == d.value.classification)
+							  { 
+								d = new google.maps.LatLng(d.value.d_latitude, d.value.d_longitude);
+								d = projection.fromLatLngToDivPixel(d);
+								return d3.select(this)
+									.style("left", (d.x - padding) + "px")
+									.style("top", (d.y - padding) + "px");
+							 }
+							  }
+							};
+						  };
+					// }//End if check for commodity
+
+					  // Bind our overlay to the map…
+						overlay.setMap(map);
+					});
+					}
+					
+					function removeRoutes(){
+					for(i = 0; i < flightPathArray.length - 1; i++)
+					{
+						flightPathArray[i].setMap(null);
+					}
+					}
+					
+					function showRoutes(myData,V , R, F){
+					d3.json("file.json", function(data) {
+					
+					for (var i = 0; i < data.length-1; i++){
+						if ((myData == 0 || myData == data[i].classification) &&((data[i].equip_type == "R" && R)||(data[i].equip_type == "V" && V)||(data[i].equip_type == "F" && F)))
+						{ 		
+						//Determine equip type
+						var routeColor;
+						if (data[i].equip_type == "V")
+						{
+							routeColor = "#FF1493";
+							var tempStrokeOpacity = 0;
+							var repeat = "20px";
+							var lineSymbol = {
+												path: 'M 0,-1 0,1',
+												strokeWeight: 1.5,
+												strokeOpacity: 1,
+										     	scale: 2
+											};							
+						}
+						else if(data[i].equip_type == "R")
+						{
+							routeColor = "#4B0082";
+							var tempStrokeOpacity = 0;
+							var repeat = "10px";
+							var lineSymbol = {
+												path: 'M 0,-1 0,1',
+												strokeWeight: 1.5,
+												strokeOpacity: 1,
+										     	scale: 2
+											};
+						}
+						else 
+						{
+							routeColor = "#FF8C00";	
+							var tempStrokeOpacity = 0;
+							var repeat = "10px";
+							var lineSymbol = {
+												path: 'M 0,-1 0,1',
+												strokeWeight: 1.5,
+												strokeOpacity: 1,
+										     	scale: 2
+											};
+						}						
+						flightPlanCoordinates = [
+						new google.maps.LatLng(data[i].d_latitude, data[i].d_longitude),
+						new google.maps.LatLng(data[i].o_lat, data[i].o_long)
+						];						
+						flightPath = new google.maps.Polyline({
+												path: flightPlanCoordinates,
+												geodesic: true,
+												strokeColor: routeColor,
+												strokeOpacity: tempStrokeOpacity,
+												icons: [{
+														icon: lineSymbol,
+														offset: '100%',
+														repeat: repeat
+													  }],
+												
+												map: map
+											  });
+						flightPath.setMap(map);
+						temp = flightPath;
+					
+						flightPathArray.push(flightPath);
+
+						}
+					}
+					});
+					}
+					
+					function initDest(myData){
+					d3.json("file.json", function(data) {
+					var overlay = new google.maps.OverlayView();			 
+					 // Add the container when the overlay is added to the map.
+					  overlay.onAdd = function() {
+						var layer = d3.select(this.getPanes().overlayLayer).append("div")
+							.attr("class", "stations");
+					 
+						// Draw each marker as a separate SVG element.
+						// We could use a single SVG, but what size would it have?
+						overlay.draw = function() {
+						  var projection = this.getProjection(),
+							  padding = 10;
+					 
+						 var marker2 = layer.selectAll("svg")
+							  .data(d3.entries(data))
+							  .each(transform) // update existing markers
+							.enter().append("svg:svg")
+							  .each(transform)
+							  .attr("class", "marker2")
+							  .attr("id","marker2");
+						 
+						 
+						  // Add a square.											  
+						marker2.append("svg:ellipse")
+							  .style("opacity", function(d){return d.value.weight/50000;})
+							 // .attr("rx", function(d){return d.value.used_miles/150;})
+							  .attr ("rx", 4)
+							  .attr("ry", 4)
+							  .attr("cx", padding)
+							  .attr("cy", padding); 
+						 //markers.push(marker2);
+//						 marker.append("svg:text")
+	//						  .attr("x", padding + 7)
+		//					  .attr("y", padding)
+			//				  .attr("dy", ".31em")
+				//			  .text(function(d) { return d.value.o_city; });
+											 
+						  function transform(d) {
+						  if (myData == 0 || myData == d.value.classification)
+							  { 
+							d = new google.maps.LatLng(d.value.o_lat, d.value.o_long);
+							d = projection.fromLatLngToDivPixel(d);
+							return d3.select(this)
+								.style("left", (d.x - padding) + "px")
+								.style("top", (d.y - padding) + "px");
+						  }
+						  }
+						};
+					  };
+					
+					overlay.setMap(map);
+					});
+					}
+
+					function init(){
+					initDest(0);
+					initSource(0);		
+					
+					}					
+					
+					function redraw(data, source, dest){
+					if(source)
+					{	
+						initSource(data);
+					}
+					else
+					{
+						var OriginMarker = d3.selectAll("svg#marker");
+						OriginMarker.remove();
+					}
+					if(dest)
+					{
+						initDest(data);
+					}
+					else{
+						var DestMarker = d3.selectAll("svg#marker2");
+						DestMarker.remove();
+					}
+				
+					//Clear all drawn routes
+					if (document.getElementById("showRoute").checked)
+					{
+							var V = document.getElementById("V").checked;
+							var R = document.getElementById("R").checked;
+							var F = document.getElementById("F").checked;
+							showRoutes(data, V, R, F); //Data, V, R, F
+					}
+					removeRoutes();
+					}
+						
+					function getChosenDataset () {
+						var select = document.getElementById("commodity");
+						return select.options[select.selectedIndex].value;
+					}
+
+					function setAllMap(map) {
+						  for (var i = 0; i < markers.length; i++) {
+							markers[i].setMap(map);
+						  }
+						}
+					
+					function update(){
+							var dataset;
+							if (document.getElementById("selectAll").checked)
+							{
+								dataset = 0;
+							}	
+							else
+							{
+								dataset = getChosenDataset();
+							}
+							
+							var OriginMarker = d3.selectAll("svg#marker");
+							OriginMarker.remove();
+							var DestMarker = d3.selectAll("svg#marker2");
+							DestMarker.remove();							
+							redraw(dataset, true, true);							
+						}
+					function update2()
+					{
+						var dataset;
+						if (document.getElementById("selectAll").checked)
+						{
+							dataset = 0;
+						}	
+						else
+						{
+							dataset = getChosenDataset();
+						}
+						var checked = document.getElementById("place-view").checked;
+						var types = [].map.call (document.querySelectorAll ("#place-view input:checked"), function (checkbox) { return checkbox.value;} );
+						if(types.length == 1)
+						{
+							if(types == "dest")
+							{
+								redraw(dataset,false,true);
+							}
+							else
+							{
+								redraw(dataset,true,false);
+							}
+						}
+						else if(types.length == 2)
+						{
+						  redraw(dataset,true,true);
+						}
+						else
+						{
+							var OriginMarker = d3.selectAll("svg#marker");
+							OriginMarker.remove();
+							var DestMarker = d3.selectAll("svg#marker2");
+							DestMarker.remove();
+						}
+
+					}
+					function update3(){
+						update();
+					}
+					
+					function update4(){
+						if (document.getElementById("showRoute").checked)
+						{
+							update();
+						}
+						else
+						{
+							removeRoutes();							
+						}
+					}
+			</script>
+
+			<div3 id="stats"></div2>
+			<script type="text/javascript">	
+			</script>
+
+			<form id="controls">
+			<div2>
+				<h2>View</h2>
+				<ul id="place-view">
+					<li><label><input type="checkbox" checked="checked" value="source">Source</label></li>
+					<li><label><input type="checkbox" checked="checked" value="dest">Destination</label></li>					
+				</ul>
+			</div2>
+			<div2>
+				<h2>Routes</h2>
+				<ul>
+					<li><label><input type="checkbox" id="showRoute">showRoute</label></li>									
+				</ul>
+			</div2>
+			<div2>
+				<h2>EquipType</h2>
+				<ul id="EquipType">
+					<li><label><input type="checkbox" checked="checked" id="V">V</label></li>									
+					<li><label><input type="checkbox" id="F">F</label></li>	
+					<li><label><input type="checkbox" id="R">R</label></li>	
+				</ul>
+			</div2>c
+			<div2>
+				<h2>Commodity Types</h2>
+				<ul>
+					<li>
+						<select id="commodity">
+							<option value="Electronics Computing Devices & Printers">Computing/Printers/Electronics</option>
+							<option selected="selected" value="Food & Kindred">Beverages,GrainsAndFood</option>
+							<option value="Fabrics & Materials">Fabrics/Materials</option>
+							<option value="Farm Products">Farm Products</option>
+							<option value="Stone Sand Clay Gravel & Glass">Stone/Sand/Gravel</option>
+							<option value="Coal">Coal</option>
+							<option value="Metallic Ores">Metallic Ores/Metals</option>
+							<option value="Lumber & Wood">Forest/Lumber/Wood</option>
+							<option value="Pulp Paper & Allied">Pulp/Paper/Cardboard/Cartons/</option>
+							<option value="Chemicals & Allied">Chemical/BleachAbrasive</option>
+							<option value="Cleaning Compounds">CleaningCompounds<option>
+							<option value="Non-Metallic Minerals">Non Metallic Minerals/Nonferrous</option>
+							<option value="Grain Mill">Mill</option>
+							<option value="Motor Vehicles & Equipment">Motor Vehicles/Automobiles</option>
+							<option value="Iron & Steel Scrap">Iron/Steel</option>
+							<option value="Waste & Nonferrous Scrap">Waste/Scrap</option>
+							<option value="Plastic Materials">Plastics</option>
+							<option value="Petroleum">Petroleum</option>
+						</select>
+					</li>
+					<li><label><input type="checkbox" checked="ckecked" id="selectAll">Select All</label></li>
+				</ul>
+			</div2>
+			
+			
+		</form>
+			
+	</body>
+	<script type="text/javascript">
+	//script was here
+	//script was here
+	google.maps.event.addDomListener(window, 'load', init);
+	document.getElementById("commodity").addEventListener ("change", update, false);
+	document.getElementById("place-view").addEventListener ("click", update2, false);
+	document.getElementById("selectAll").addEventListener ("click", update3, false);
+	document.getElementById("showRoute").addEventListener ("change", update4, false);
+	</script>		
+	</html>	
