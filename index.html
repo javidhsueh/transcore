@@ -9,35 +9,44 @@
   <meta name="robots" content="noindex">
 
   <!-- jQuery UI -->
-  <script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+  <script type="text/javascript" src="3rd_party/jquery-1.9.1.min.js"></script>
   <link href="3rd_party/jqueryui/css/dark-hive/jquery-ui-1.10.1.custom.css" rel="stylesheet">
   <script type="text/javascript" src="3rd_party/jqueryui/js/jquery-ui-1.10.1.custom.js"></script>
-  <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jquery.templates/beta1/jquery.tmpl.min.js"></script>
+  <script type="text/javascript" src="3rd_party/jquery.tmpl.min.js"></script>
   <script type="text/javascript" src="3rd_party/jquery-ui.toggleSwitch.js"></script>
   <script type="text/javascript" src="3rd_party/jquery.corner.js"></script>
+  <script type="text/javascript" src="3rd_party/jquery-selectbox/jquery.selectbox.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="3rd_party/jquery-selectbox/jquery.selectbox.css" />
 
   <!-- jquery multi selection -->
   <script type="text/javascript" src="3rd_party/jquery-multiselect/jquery.multiselect.js"></script>
   <link rel="stylesheet" type="text/css" href="3rd_party/jquery-multiselect/jquery.multiselect.css" />
 
+  <!-- jquery bsm select-->
+  <link rel="stylesheet" type="text/css" href="3rd_party/bsmSelect/jquery.bsmselect.css" />
+  <script type="text/javascript" src="3rd_party/bsmSelect/jquery.bsmselect.js"></script>
+  <script type="text/javascript" src="3rd_party/bsmSelect/jquery.bsmselect.sortable.js"></script>
+  <script type="text/javascript" src="3rd_party/bsmSelect/jquery.bsmselect.compatibility.js"></script>
+
   <!-- library-->
-  <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/0.9.10/backbone-min.js"></script>
-  <script src="http://d3js.org/d3.v3.min.js"></script>
-  <script src="http://code.jquery.com/jquery-migrate-1.0.0.js"></script>
+  <script src="3rd_party/underscore-min.js"></script>
+  <script src="3rd_party/backbone-min.js"></script>
+  <script src="3rd_party/d3.v3.min.js"></script>
+  <script src="3rd_party/jquery-migrate-1.2.1.min.js"></script>
 
   <!--  map -->
-  <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=visualization"></script>
 
   <!-- My custom CSS -->
   <link href="media/style.css" rel="stylesheet">
 
   <!-- custom js files -->
+  <script type="text/javascript" src="media/utils.js"></script>
   <script type="text/javascript" src="media/label.js"></script>
   <script type="text/javascript" src="media/setting.js"></script>
   <script type="text/javascript" src="media/DataModel.js"></script>
-  <script type="text/javascript" src="media/CommonFunctions.js"></script>
   <script type="text/javascript" src="media/BasicMapView.js"></script>
+  <script type="text/javascript" src="media/CityDataManager.js"></script>
   <script type="text/javascript" src="media/myapp.js"></script>
   
 </head>
@@ -60,7 +69,51 @@
 		</ul>
 		<!-- map view container -->
 		<div id="map_container"></div>
+		<div id="layersBtn" style="z-index:1; position: absolute; left: 90px; top : 50px; width:100px; ">
+			<div class="" title="Select region A" style="z-index:1">
+				<div class="">Map layers:<br/>
+					<select id="map_layers" multiple="multiple" ></select>
+				</div>
+				<div class="layers_list"></div>
+			</div>
+		</div>
+
+		<div id="commodityBtn" style="z-index:1; position: absolute; left: 350px; top: 50px; ">
+			<div class="" title="Select region A" style="z-index:1">
+				<div class="">Commodities:<br/>
+					<select id="commodity_filter" multiple="multiple"></select>
+				</div>
+			</div>
+		</div>
+
+		<div id="attributeBtn" style="z-index:1; position: absolute; left: 600px; top: 50px; ">
+			<div class="" title="Select Attributes" style="z-index:1">
+				<div class="">Attributes:<br/>
+					<select id="attribute_filter" multiple="multiple">
+						<option value="weight" selected="selected">weight</option>
+						<option value="mileage">mileage</option>
+					</select>
+				</div>
+			</div>
+		</div>
 	</div>
+
+	<!-- map buttons -->
+	<div id="regBtnA" style="z-index:1">
+		<div class="mapControlUI" title="Select region A" style="z-index:1">
+			<div class="mapControlText"><b>Select region A</b></div>
+		</div>
+	</div>
+
+	<div id="regBtnB" style="z-index:1">
+		<div class="mapControlUI" title="Select region B" style="z-index:1">
+			<div class="mapControlText"><b>Select region B</b></div>
+		</div>
+	</div>
+
+	
+
+	
 	
 	<!-- collapse/expand button for control panel-->
 	<div id="control_window_toggle">
@@ -84,12 +137,40 @@
 
 	<!-- collapse/expand button for control panel-->
 	<div id="detail_window_toggle" >
-		<img src="images/icon/down.png" height="18" style="position: relative; left:5px;top:10px;"/>
+		<img src="images/icon/left.png" height="18" style="position: relative; left:5px;top:10px;"/>
 	</div>
 	
 	<!-- Control panel -->
 	<div id="detail_window">
-		<div id="detail_views"></div>
+		<div id="detail_views" style="padding: 0 15px 0 15px; word-wrap: break-word;">
+			<h1>Detail view: </h1>
+			<h3>Region A: </h3>
+			<span id="regionA_list" class="city_text"></span>
+			<h3>Region B: </h3>
+			<span id="regionB_list" class="city_text"></span>
+
+			<div id="accordion">
+				<h3>Within A: </h3>
+				<div id="regionA_charts">
+					
+				</div>
+
+				<h3>Within B: </h3>
+				<div id="regionB_charts">
+					
+				</div>
+
+				<h3>From A to B</h3>
+				<div id="regionAB_charts">
+					
+				</div>
+
+				<h3>From B to A</h3>
+				<div id="regionBA_charts">
+					
+				</div>
+			</div>
+		</div>
 	</div>
 
 

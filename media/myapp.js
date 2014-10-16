@@ -72,22 +72,28 @@ var OverallApp = function OverallApp(){
 
     this.el_control_window.width(control_window_width+"px");
     this.el_control_window.height(control_window_height+"px");
+    // this.el_control_window.css("bottom",-1*control_window_height+"px");
+    self.el_control_window.slideToggle('slow');
     this.el_control_window.corner("top");
 
     this.el_control_window_toggle.corner("top");
     this.el_control_window_toggle.css({bottom: control_window_height});
-    var toggleOverallWindowFlag = true;
+    self.el_control_window_toggle.animate({
+            bottom: 0
+        }, 'slow');
+
+    var toggleControlWindowFlag = false;
     this.el_control_window_toggle.on('click', function(){
         var bottom_pos = 0;
         var icon_name = "up";
-        if(!toggleOverallWindowFlag){
+        if(!toggleControlWindowFlag){
             bottom_pos = control_window_height;
             icon_name = "down";
         }
         self.el_control_window_toggle.animate({
             bottom: bottom_pos
         }, 'slow');
-        toggleOverallWindowFlag = toggleOverallWindowFlag === false;
+        toggleControlWindowFlag = !toggleControlWindowFlag;
         $("#control_window_toggle img").attr({src:"images/icon/"+icon_name+".png"});
         self.el_control_window.slideToggle('slow');
     });
@@ -105,10 +111,10 @@ var OverallApp = function OverallApp(){
     var toggleDetailWindowFlag = false;
     this.el_detail_window_toggle.on('click', function(){
         var right_pos = 0;
-        var icon_name = "up";
+        var icon_name = "left";
         if(!toggleDetailWindowFlag){
             right_pos = detail_window_width;
-            icon_name = "down";
+            icon_name = "right";
         }
         self.el_detail_window_toggle.animate({
             right: right_pos
@@ -139,6 +145,8 @@ var OverallApp = function OverallApp(){
 
 
     // init widgets:
+    this.cityManager = new CityDataManager({containerID:"#detail_views", model: dataModel});
+
     this.googleMapView = new BasicMapView({containerID:"#map_container", model: dataModel});
     
     
